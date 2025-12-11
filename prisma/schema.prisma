@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id        String        @id @default(uuid())
+  name      String
+  status    String        @default("INGESTION") // Enum: INGESTION, DOU_REVIEW, RTM_BUILD, TEST_BUILD
+  assets    RawAsset[]
+  dou       DOU?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+// Enum ProjectStatus removed for SQLite compatibility
+
+model RawAsset {
+  id        String   @id @default(uuid())
+  content   String
+  type      String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  createdAt DateTime @default(now())
+}
+
+model DOU {
+  id        String    @id @default(uuid())
+  content   String
+  status    String    @default("DRAFT") // Enum: DRAFT, PENDING_APPROVAL, APPROVED
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String    @unique
+  rtmItems  RTMItem[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// Enum DOUStatus removed for SQLite compatibility
+
+model RTMItem {
+  id          String         @id @default(uuid())
+  reqId       String
+  description String
+  dou         DOU            @relation(fields: [douId], references: [id], onDelete: Cascade)
+  douId       String
+  scenarios   TestScenario[]
+}
+
+model TestScenario {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  steps       String
+  rtmItem     RTMItem    @relation(fields: [rtmItemId], references: [id], onDelete: Cascade)
+  rtmItemId   String
+  testCases   TestCase[]
+}
+
+model TestCase {
+  id             String          @id @default(uuid())
+  title          String
+  preconditions  String?
+  steps          String
+  expectedResult String
+  scenario       TestScenario    @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  scenarioId     String
+  automatedTests AutomatedTest[]
+}
+
+model AutomatedTest {
+  id         String   @id @default(uuid())
+  code       String
+  language   String   @default("typescript")
+  framework  String   @default("playwright")
+  testCase   TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  testCaseId String
+}
