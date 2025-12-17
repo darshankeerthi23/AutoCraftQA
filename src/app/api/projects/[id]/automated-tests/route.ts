@@ -8,14 +8,10 @@ const generateSchema = z.object({
     testCaseId: z.string().uuid(),
 });
 
-export async function POST(
-    req: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
         const { testCaseId } = generateSchema.parse(body);
-        const { id } = await params;
 
         const testCase = await prisma.testCase.findUnique({ where: { id: testCaseId } });
         if (!testCase) throw new AppError('NOT_FOUND', 'Test Case not found', 404);

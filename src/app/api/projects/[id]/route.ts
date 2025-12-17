@@ -14,3 +14,17 @@ export async function GET(
         return errorResponse(error);
     }
 }
+
+export async function DELETE(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        await ProjectService.softDelete(id);
+        return successResponse({ deleted: true });
+    } catch (error) {
+        return errorResponse(error);
+    }
+}
+

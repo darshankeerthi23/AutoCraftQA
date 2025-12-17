@@ -9,8 +9,8 @@ export class ProjectService {
     }
 
     static async getById(id: string) {
-        const project = await prisma.project.findUnique({
-            where: { id },
+        const project = await prisma.project.findFirst({
+            where: { id, deletedAt: null },
             include: {
                 assets: true,
                 dou: {
@@ -38,6 +38,7 @@ export class ProjectService {
 
     static async getAll() {
         return prisma.project.findMany({
+            where: { deletedAt: null },
             orderBy: { createdAt: 'desc' },
         });
     }
@@ -49,9 +50,17 @@ export class ProjectService {
     }
 
     static async updateStatus(id: string, status: string) {
+        // updateMany allows filtering by non-unique fields like deletedAt
+        return prisma.project.updateMany({
+            where: { id, deletedAt: null },
+            data: { status }
+        });
+    }
+
+    static async softDelete(id: string) {
         return prisma.project.update({
             where: { id },
-            data: { status }
+            data: { deletedAt: new Date() }
         });
     }
 }

@@ -14,17 +14,7 @@ export default function ProjectWorkspace() {
     const router = useRouter();
     const id = params.id as string;
 
-    const { data: projectData, error, isLoading } = useSWR(`/api/projects?id=${id}`, () =>
-        // We actually need a specific get endpoint, but for MVP list filters or we implement getById.
-        // Actually, we implemented getAll in GET /api/projects. Ideally we need GET /api/projects/[id] or filter.
-        // Let's rely on the fact that for MVP we might just fetch all and find, OR simpler:
-        // I should have implemented GET /api/projects/[id].
-        // Let's do a quick fetch to the specific endpoint I need to create or reusing the list is inefficient.
-        // Wait, I didn't create a GET /api/projects/[id] route yet. I only made POST.
-        // I'll make a quick inline fetcher that calls the server action or just ...
-        // Let's fix this by assuming I will create the GET endpoint in a moment.
-        fetch(`/api/projects/${id}`).then(res => res.json())
-    );
+    const { data: projectData, isLoading } = useSWR(`/api/projects/${id}`, fetcher);
 
     const [inputContent, setInputContent] = useState('');
     const [inputType, setInputType] = useState('Requirement');
@@ -67,7 +57,7 @@ export default function ProjectWorkspace() {
     };
 
     // RTM Items Fetcher
-    const { data: rtmData } = useSWR(
+    useSWR(
         projectData?.data?.dou?.status === 'APPROVED' ? `/api/projects/${id}/rtm/items` : null,
         fetcher
     );
@@ -116,6 +106,7 @@ export default function ProjectWorkspace() {
                                 placeholder="Paste requirements here..."
                                 value={inputContent}
                                 onChange={(e) => setInputContent(e.target.value)}
+                                data-testid="asset-upload"
                             />
                             <button
                                 onClick={handleIngest}
@@ -128,7 +119,7 @@ export default function ProjectWorkspace() {
                             <div className="mt-6">
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Assets</h3>
                                 <ul className="space-y-2">
-                                    {project.assets.map((a: any) => (
+                                    {project.assets.map((a: { id: string; type: string; content: string }) => (
                                         <li key={a.id} className="p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs truncate">
                                             <span className="font-bold">{a.type}:</span> {a.content.substring(0, 50)}...
                                         </li>
@@ -150,6 +141,7 @@ export default function ProjectWorkspace() {
                                             onClick={handleGenerateDOU}
                                             disabled={isProcessing || project.assets.length === 0}
                                             className="px-4 py-2 bg-purple-600 text-white rounded text-sm disabled:opacity-50"
+                                            data-testid="generate-dou"
                                         >
                                             Generage DOU
                                         </button>
@@ -167,7 +159,7 @@ export default function ProjectWorkspace() {
                             </div>
 
                             {project.dou ? (
-                                <div className="prose prose-sm max-w-none bg-gray-50 dark:bg-gray-800 p-4 rounded h-96 overflow-y-auto border">
+                                <div className="prose prose-sm max-w-none bg-gray-50 dark:bg-gray-800 p-4 rounded h-96 overflow-y-auto border" data-testid="dou-output">
                                     <span className="inline-block px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-800 mb-2">
                                         {project.dou.status}
                                     </span>
@@ -189,6 +181,7 @@ export default function ProjectWorkspace() {
                                         <button
                                             onClick={handleGenerateRTM}
                                             className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 transition"
+                                            data-testid="generate-rtm"
                                         >
                                             {project.dou.rtmItems?.length > 0 ? 'Refresh Architecture' : 'Generate Architecture'}
                                         </button>
@@ -196,7 +189,7 @@ export default function ProjectWorkspace() {
                                 </div>
 
                                 {/* Detailed RTM View */}
-                                <div className="mt-4">
+                                <div className="mt-4" data-testid="rtm-output">
                                     <RTMView projectId={id} />
                                 </div>
                             </div>

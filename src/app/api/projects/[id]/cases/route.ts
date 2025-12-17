@@ -8,15 +8,11 @@ const generateSchema = z.object({
     scenarioId: z.string().uuid(),
 });
 
-export async function POST(
-    req: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
         const { scenarioId } = generateSchema.parse(body);
         // id param not strictly needed but good to have context if we want to validate project ownership
-        const { id } = await params;
 
         const scenario = await prisma.testScenario.findUnique({ where: { id: scenarioId } });
         if (!scenario) throw new AppError('NOT_FOUND', 'Scenario not found', 404);

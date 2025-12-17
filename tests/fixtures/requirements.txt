@@ -1,0 +1,2 @@
+System shall support user login using username and password.
+System shall lock account after 3 failed attempts.

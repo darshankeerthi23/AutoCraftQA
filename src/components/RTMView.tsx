@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import useSWR, { mutate } from 'swr';
-import { Loader2, Play, FileCode, CheckCircle } from 'lucide-react';
+import { Loader2, FileCode, CheckCircle } from 'lucide-react';
+import { RTMItem, TestScenario, TestCase, AutomatedTest } from '@prisma/client';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -20,7 +21,7 @@ export default function RTMView({ projectId }: RTMViewProps) {
     // Let's rely on a new endpoint or update the project fetch to include everything.
     // I will assume I'll update the project service to include `dou.rtmItems.scenarios.testCases.automatedTests`.
 
-    const { data, error, isLoading } = useSWR(`/api/projects/${projectId}`, fetcher);
+    const { data, isLoading } = useSWR(`/api/projects/${projectId}`, fetcher);
     const [processingId, setProcessingId] = useState<string | null>(null);
 
     if (isLoading) return <div>Loading Architecture...</div>;
@@ -67,7 +68,7 @@ export default function RTMView({ projectId }: RTMViewProps) {
                 <div className="text-gray-500 italic">No RTM items generated yet.</div>
             )}
 
-            {rtmItems.map((item: any) => (
+            {rtmItems.map((item: RTMItem & { scenarios: (TestScenario & { testCases: (TestCase & { automatedTests: AutomatedTest[] })[] })[] }) => (
                 <div key={item.id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-6 bg-white dark:bg-gray-900 shadow-sm">
                     <div className="flex justify-between items-start mb-4">
                         <div>
@@ -79,6 +80,7 @@ export default function RTMView({ projectId }: RTMViewProps) {
                                 onClick={() => handleGenScenarios(item.id)}
                                 disabled={!!processingId}
                                 className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 disabled:opacity-50 text-sm font-medium"
+                                data-testid="generate-scenarios"
                             >
                                 {processingId === item.id && <Loader2 className="w-4 h-4 animate-spin" />}
                                 Generate Scenarios
@@ -88,8 +90,8 @@ export default function RTMView({ projectId }: RTMViewProps) {
 
                     {/* Scenarios */}
                     {item.scenarios && item.scenarios.length > 0 && (
-                        <div className="ml-4 pl-4 border-l-2 border-gray-100 dark:border-gray-700 space-y-6 mt-4">
-                            {item.scenarios.map((scen: any) => (
+                        <div className="ml-4 pl-4 border-l-2 border-gray-100 dark:border-gray-700 space-y-6 mt-4" data-testid="scenarios-output">
+                            {item.scenarios.map((scen: TestScenario & { testCases: (TestCase & { automatedTests: AutomatedTest[] })[] }) => (
                                 <div key={scen.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-md p-4">
                                     <div className="flex justify-between items-center mb-2">
                                         <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300">Scenario: {scen.title}</h4>
@@ -98,6 +100,7 @@ export default function RTMView({ projectId }: RTMViewProps) {
                                                 onClick={() => handleGenCases(scen.id)}
                                                 disabled={!!processingId}
                                                 className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-200 disabled:opacity-50"
+                                                data-testid="generate-cases"
                                             >
                                                 {processingId === scen.id ? '...' : 'Gen Cases'}
                                             </button>
@@ -106,8 +109,8 @@ export default function RTMView({ projectId }: RTMViewProps) {
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-mono ml-1">{scen.steps}</p>
 
                                     {/* Test Cases */}
-                                    <div className="space-y-3 mt-3">
-                                        {scen.testCases?.map((tc: any) => (
+                                    <div className="space-y-3 mt-3" data-testid="cases-output">
+                                        {scen.testCases?.map((tc: TestCase & { automatedTests: AutomatedTest[] }) => (
                                             <div key={tc.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 rounded shadow-sm">
                                                 <div className="flex justify-between items-start">
                                                     <div className="w-full">
@@ -127,6 +130,7 @@ export default function RTMView({ projectId }: RTMViewProps) {
                                                                 disabled={!!processingId}
                                                                 className="p-1.5 text-purple-600 hover:bg-purple-50 rounded"
                                                                 title="Generate Automated Test"
+                                                                data-testid="generate-automated-tests"
                                                             >
                                                                 {processingId === tc.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCode className="w-4 h-4" />}
                                                             </button>
@@ -137,8 +141,8 @@ export default function RTMView({ projectId }: RTMViewProps) {
                                                 </div>
 
                                                 {/* Automated Test Code */}
-                                                {tc.automatedTests?.map((at: any) => (
-                                                    <div key={at.id} className="mt-3">
+                                                {tc.automatedTests?.map((at: AutomatedTest) => (
+                                                    <div key={at.id} className="mt-3" data-testid="automated-tests-output">
                                                         <div className="bg-gray-900 text-gray-300 p-3 rounded text-xs font-mono overflow-x-auto relative group">
                                                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                                 <span className="bg-gray-700 text-[10px] px-2 py-1 rounded">Playwright</span>

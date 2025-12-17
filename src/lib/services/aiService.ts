@@ -13,12 +13,25 @@ export class AIService {
             console.warn('USING MOCK AI SERVICE');
 
             if (systemPrompt.includes('Document of Understanding')) {
+                const inputSnippet = userContent.slice(0, 100).replace(/\n/g, ' ');
+
+                // Heuristic: Extract sentences that look like requirements (contain 'shall', 'must', 'user can')
+                const potentialReqs = userContent.split(/[.\n]+/)
+                    .filter(line => /shall|must|can|should|users/i.test(line))
+                    .map(line => line.trim())
+                    .filter(line => line.length > 10)
+                    .slice(0, 5);
+
+                const dynamicReqs = potentialReqs.length > 0
+                    ? potentialReqs.map((req, i) => `${i + 1}. **Requirement:** ${req}`).join('\n')
+                    : '1. **Ingested Requirement:** ' + inputSnippet + '...';
+
                 return `# Executive Summary
 This is a MOCK Document of Understanding generated for testing purposes.
+Based on input: "${inputSnippet}..."
 
 # Functional Requirements
-1.  **User Authentication:** Users must be able to log in.
-2.  **Dashboard:** Users view a summary of projects.
+${dynamicReqs}
 
 # Non-Functional Requirements
 - Response time < 200ms.
@@ -94,7 +107,7 @@ test('Login with correct password', async ({ page }) => {
             // Basic cleanup to ensure valid JSON parsing if AI adds markdown ticks
             const cleaned = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
             return JSON.parse(cleaned);
-        } catch (e) {
+        } catch {
             throw new AppError('INTERNAL_ERROR', 'AI Generated Invalid JSON for RTM', 500);
         }
     }
@@ -104,7 +117,7 @@ test('Login with correct password', async ({ page }) => {
         try {
             const cleaned = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
             return JSON.parse(cleaned);
-        } catch (e) {
+        } catch {
             throw new AppError('INTERNAL_ERROR', 'AI Generated Invalid JSON for Scenarios', 500);
         }
     }
@@ -114,7 +127,7 @@ test('Login with correct password', async ({ page }) => {
         try {
             const cleaned = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
             return JSON.parse(cleaned);
-        } catch (e) {
+        } catch {
             throw new AppError('INTERNAL_ERROR', 'AI Generated Invalid JSON for Test Cases', 500);
         }
     }

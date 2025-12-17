@@ -5,6 +5,9 @@ import useSWR, { mutate } from 'swr';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { Project } from '@prisma/client';
+import { Trash2 } from 'lucide-react';
+
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function Home() {
@@ -37,6 +40,19 @@ export default function Home() {
     }
   };
 
+  const deleteProject = async (id: string, e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation
+    if (!confirm('Are you sure you want to delete this project?')) return;
+
+    try {
+      await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+      mutate('/api/projects');
+    } catch (err) {
+      console.error('Failed to delete', err);
+      alert('Failed to delete project');
+    }
+  };
+
   if (error) return <div className="p-8 text-red-500">Failed to load projects.</div>;
   if (isLoading) return <div className="p-8">Loading projects...</div>;
 
@@ -61,11 +77,13 @@ export default function Home() {
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
               disabled={isCreating}
+              data-testid="project-name"
             />
             <button
               type="submit"
               disabled={isCreating || !newProjectName.trim()}
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              data-testid="create-project"
             >
               {isCreating ? 'Creating...' : 'Create Project'}
             </button>
@@ -73,7 +91,7 @@ export default function Home() {
         </section>
 
         <section className="grid gap-4">
-          {data?.data?.map((project: any) => (
+          {data?.data?.map((project: Project) => (
             <Link
               key={project.id}
               href={`/projects/${project.id}`}
@@ -88,8 +106,18 @@ export default function Home() {
                     Status: <span className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-xs">{project.status}</span>
                   </p>
                 </div>
-                <div className="text-gray-400 group-hover:translate-x-1 transition-transform">
-                  →
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={(e) => deleteProject(project.id, e)}
+                    className="text-gray-400 hover:text-red-600 transition-colors p-2"
+                    data-testid="delete-project"
+                    title="Delete Project"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                  <div className="text-gray-400 group-hover:translate-x-1 transition-transform">
+                    →
+                  </div>
                 </div>
               </div>
             </Link>

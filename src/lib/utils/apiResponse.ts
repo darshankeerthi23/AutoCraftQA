@@ -6,7 +6,7 @@ type ErrorCode = 'INVALID_INPUT' | 'NOT_FOUND' | 'INTERNAL_ERROR' | 'UNAUTHORIZE
 interface ApiError {
     code: ErrorCode;
     message: string;
-    details?: any;
+    details?: unknown;
 }
 
 interface ApiResponse<T> {
@@ -18,9 +18,9 @@ interface ApiResponse<T> {
 export class AppError extends Error {
     public code: ErrorCode;
     public statusCode: number;
-    public details?: any;
+    public details?: unknown;
 
-    constructor(code: ErrorCode, message: string, statusCode = 400, details?: any) {
+    constructor(code: ErrorCode, message: string, statusCode = 400, details?: unknown) {
         super(message);
         this.code = code;
         this.statusCode = statusCode;
@@ -49,6 +49,7 @@ export function errorResponse(error: unknown) {
         return NextResponse.json(
             {
                 success: false,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 error: { code: 'INVALID_INPUT', message: 'Validation failed', details: (error as any).errors },
             },
             { status: 400 }
